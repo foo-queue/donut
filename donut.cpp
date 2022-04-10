@@ -7,13 +7,13 @@
 #include <csignal>
 
 constexpr auto pi2 = std::numbers::pi * 2;
-constexpr auto lines = 25;
-constexpr auto linelen = 80;
+constexpr auto lines = 25u;
+constexpr auto linelen = 80u;
 constexpr auto speed = 0.0704;
 constexpr auto delay = std::chrono::milliseconds{1};
 
 typedef std::array<int, lines * linelen> data_array;
-typedef std::array<std::string_view, 13> glyph_array;
+typedef std::array<std::string_view, 13u> glyph_array;
 
 constexpr glyph_array glyphs{
     " ",
@@ -47,12 +47,12 @@ constexpr glyph_array shades{
     "\x1b[38;5;255m@", // light gray
 };
 
-void draw(const data_array &b, const glyph_array& glyphs)
+void draw(const data_array &b, const glyph_array &glyphs)
 {
     std::cout << "\x1b[H"; // move cursor to home position (0,0)
-    for (auto y = 0; y < b.size(); y += linelen)
+    for (auto y = 0u; y < b.size(); y += linelen)
     {
-        for (auto x = 0; x < linelen; ++x)
+        for (auto x = 0u; x < linelen; ++x)
         {
             const auto n = b[y + x];
             std::cout << glyphs[n];
@@ -64,28 +64,28 @@ void draw(const data_array &b, const glyph_array& glyphs)
 void exec(double A, double B, data_array &b)
 {
     b.fill(0);
-    auto z = std::array<float, lines * linelen>{};
-    auto sinA = sin(A);
-    auto cosA = cos(A);
-    auto cosB = cos(B);
-    auto sinB = sin(B);
+    auto z = std::array<double, lines * linelen>{};
+    const auto sinA = sin(A);
+    const auto cosA = cos(A);
+    const auto cosB = cos(B);
+    const auto sinB = sin(B);
     for (auto j = 0.; j < pi2; j += pi2 / 90.)
     {
-        auto cosj = cos(j);
-        auto sinj = sin(j);
-        auto h = cosj + 2;
-        for (auto i = 0.; i < pi2; i += pi2 / 314)
+        const auto cosj = cos(j);
+        const auto sinj = sin(j);
+        const auto h = cosj + 2;
+        for (auto i = 0.; i < pi2; i += pi2 / 200)
         {
-            auto sini = sin(i);
-            auto cosi = cos(i);
-            auto D = 1 / ((sini * h * sinA) + (sinj * cosA) + 5);
-            auto t = (sini * h * cosA) - (sinj * sinA);
-            int x = 1 + (linelen / 2) + (30 * D * ((cosi * h * cosB) - (t * sinB)));
-            int y = 1 + (lines / 2) + (15 * D * ((cosi * h * sinB) + (t * cosB)));
-            int o = x + (linelen * y);
+            const auto sini = sin(i);
+            const auto cosi = cos(i);
+            const auto D = 1 / ((sini * h * sinA) + (sinj * cosA) + 5);
+            const auto t = (sini * h * cosA) - (sinj * sinA);
+            const auto x = static_cast<int>(1 + (linelen / 2) + (30 * D * ((cosi * h * cosB) - (t * sinB))));
+            const auto y = static_cast<int>(1 + (lines / 2) + (15 * D * ((cosi * h * sinB) + (t * cosB))));
+            const auto o = x + (linelen * y);
             if (0 < y && y < lines && 0 < x && x < linelen && D > z[o])
             {
-                int N = 8 * ((((sinj * sinA) - (sini * cosj * cosA)) * cosB) - (sini * cosj * sinA) - (sinj * cosA) - (cosi * cosj * sinB));
+                const auto N = static_cast<int>(8 * ((((sinj * sinA) - (sini * cosj * cosA)) * cosB) - (sini * cosj * sinA) - (sinj * cosA) - (cosi * cosj * sinB)));
                 z[o] = D;
                 b[o] = N > 0 ? N : 1;
             }
@@ -95,14 +95,15 @@ void exec(double A, double B, data_array &b)
 
 volatile std::sig_atomic_t shouldQuit = 0;
 
-void signal_handler(int)
+void sigint_handler(int n)
 {
     shouldQuit = 1;
+    std::signal(n, SIG_ACK);
 }
 
 int main()
 {
-    std::signal(SIGINT, signal_handler);
+    std::signal(SIGINT, sigint_handler);
 
     std::cout << "\x1b[?25l"; // hide cursor (reduces flicker)
     std::cout << "\x1b[2J";   // erase screen
@@ -113,7 +114,7 @@ int main()
     {
         exec(A, B, data);
 
-        //draw(data, glyphs);
+        // draw(data, glyphs);
         draw(data, shades);
 
         std::this_thread::sleep_for(delay);
