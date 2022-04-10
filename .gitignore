@@ -1,4 +1,1 @@
-*.pdb
-*.exe
-*.ilk
-*.obj
+build
